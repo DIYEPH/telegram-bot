@@ -109,11 +109,15 @@ async function startBot() {
     }
   }, 30000);
 
+  const getAdminUsername = () => (config.ADMIN_USER_NAME || '').trim().replace('@', '');
+
   bot.onText(/\/start/, (msg) => {
     db.saveUser(msg.from.id, getFullName(msg.from), msg.from.username || '');
     const products = db.getAllProducts();
     const keyboard = products.map(p => [{ text: '🎁 ' + p.name + ' ┃ ' + formatPrice(p.price) + ' ┃ 📦' + p.stock_count, callback_data: 'product_' + p.id }]);
     keyboard.push([{ text: '👤 Hồ sơ', callback_data: 'main_profile' }, { text: '📋 Lịch sử', callback_data: 'main_history' }]);
+    const adminUser = getAdminUsername();
+    if (adminUser) keyboard.push([{ text: '💬 Liên hệ Admin', url: 'https://t.me/' + adminUser }]);
     const text = '⛄ ' + config.SHOP_NAME + '\n' +
                  '━━━━━━━━━━━━━━━━━━━━━\n\n' +
                  '✨ Xin chào, ' + getFullName(msg.from) + '!\n\n' +
