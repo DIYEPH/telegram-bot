@@ -5,6 +5,7 @@ const sepay = require('./sepay');
 
 const formatPrice = (price) => price.toLocaleString('vi-VN') + ' VND';
 const isAdmin = (userId) => config.ADMIN_IDS.includes(userId);
+const getFullName = (user) => (user.first_name + (user.last_name ? ' ' + user.last_name : '')).trim();
 const ORDER_TIMEOUT_MS = 20 * 60 * 1000;
 
 const pendingOrders = new Map();
@@ -109,19 +110,19 @@ async function startBot() {
   }, 30000);
 
   bot.onText(/\/start/, (msg) => {
-    db.saveUser(msg.from.id, msg.from.first_name, msg.from.username || '');
+    db.saveUser(msg.from.id, getFullName(msg.from), msg.from.username || '');
     const products = db.getAllProducts();
     const keyboard = products.map(p => [{ text: '🎁 ' + p.name + ' ┃ ' + formatPrice(p.price) + ' ┃ 📦' + p.stock_count, callback_data: 'product_' + p.id }]);
     keyboard.push([{ text: '👤 Hồ sơ', callback_data: 'main_profile' }, { text: '📋 Lịch sử', callback_data: 'main_history' }]);
     const text = '⛄ ' + config.SHOP_NAME + '\n' +
                  '━━━━━━━━━━━━━━━━━━━━━\n\n' +
-                 '✨ Xin chào, ' + msg.from.first_name + '!\n\n' +
+                 '✨ Xin chào, ' + getFullName(msg.from) + '!\n\n' +
                  (products.length > 0 ? '🛒 Chọn sản phẩm để mua:' : '⛄ Chưa có sản phẩm nào!');
     bot.sendMessage(msg.chat.id, text, { reply_markup: { inline_keyboard: keyboard } });
   });
 
   bot.onText(/\/menu/, (msg) => {
-    db.saveUser(msg.from.id, msg.from.first_name, msg.from.username || '');
+    db.saveUser(msg.from.id, getFullName(msg.from), msg.from.username || '');
     const products = db.getAllProducts();
     const keyboard = products.map(p => [{ text: '🎁 ' + p.name + ' ┃ ' + formatPrice(p.price) + ' ┃ 📦' + p.stock_count, callback_data: 'product_' + p.id }]);
     keyboard.push([{ text: '👤 Hồ sơ', callback_data: 'main_profile' }, { text: '📋 Lịch sử', callback_data: 'main_history' }]);
@@ -179,7 +180,7 @@ async function startBot() {
         const text = '👤 HỒ SƠ CỦA BẠN\n' +
                      '━━━━━━━━━━━━━━━━━━━━━\n\n' +
                      '🆔 ID: ' + userId + '\n' +
-                     '✨ Tên: ' + query.from.first_name + '\n' +
+                     '✨ Tên: ' + getFullName(query.from) + '\n' +
                      '📧 Username: ' + (query.from.username ? '@' + query.from.username : 'Chưa có') + '\n\n' +
                      '📊 THỐNG KÊ\n' +
                      '🛍️ Đơn hoàn thành: ' + completed.length + '\n' +
@@ -337,7 +338,7 @@ async function startBot() {
                                '⛄ Cảm ơn bạn đã mua hàng!\n' +
                                '🛒 Mua thêm? Gõ /menu';
             await bot.sendMessage(chatId, successMsg);
-            config.ADMIN_IDS.forEach(id => bot.sendMessage(id, '🔔 Đơn #' + orderId + ' ĐÃ THANH TOÁN\n👤 ' + query.from.first_name + ' (' + userId + ')\n🎁 ' + product.name + ' x' + qty + '\n💵 ' + formatPrice(order.totalPrice)));
+            config.ADMIN_IDS.forEach(id => bot.sendMessage(id, '🔔 Đơn #' + orderId + ' ĐÃ THANH TOÁN\n👤 ' + getFullName(query.from) + ' (' + userId + ')\n🎁 ' + product.name + ' x' + qty + '\n💵 ' + formatPrice(order.totalPrice)));
           }
         } else {
           bot.answerCallbackQuery(query.id, { text: '❄️ Chưa nhận được thanh toán! Thử lại sau.', show_alert: true });
